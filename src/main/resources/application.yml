@@ -1,0 +1,103 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: shipment-service
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: shipment-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: java.util.*,com.tlcn.*
+        spring.json.type-mappings: com.tlcn.order_service.dto.kafka.SubOrderShippingRequested:com.tlcn.shipment_service.dto.kafka.SubOrderShippingRequested
+    listener:
+      ack-mode: manual_immediate
+    topics:
+      suborder-shipping-requested: suborder-shipping-requested
+      shipment-created: shipment-created
+      shipment-status-changed: shipment-status-changed
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/shipment_db
+    username: postgres
+    password: loi114
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:4321/realms/ecommerce-realm
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 60000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  eureka:
+    client:
+      service-url:
+        defaultZone: http://localhost:8761/eureka/
+      enabled: true
+    instance:
+      prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.cloud.client.ip-address}:${server.port}
+    ip-address: ${spring.cloud.client.ip-address}
+
+order-service:
+  base-url: http://localhost:8084
+
+cors:
+  allowed-origins: http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:3000
+
+carrier:
+  mock-enabled: true
+  default-code: GIAOHANG_NHANH
+  base-url: https://api.carrier.example
+
+kafka:
+  idempotency:
+    ttl-hours: 24
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.cloud: DEBUG
+    com.tlcn: DEBUG
+    org.keycloak: DEBUG
